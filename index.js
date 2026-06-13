@@ -30,6 +30,16 @@ async function run() {
     const db = client.db("mediqueue")
     const tutorCollection = db.collection("tutors")
 
+    app.get('/tutors', async (req, res) => {
+        const result = await tutorCollection.find().toArray();
+        res.json(result)
+    })
+
+    app.get('/featured', async (req, res) => {
+        const result = await tutorCollection.find().limit(3).toArray();
+        res.json(result)
+    })
+
     app.post('/tutors', async (req, res) => {
         const tutorData = req.body
         console.log(tutorData)
