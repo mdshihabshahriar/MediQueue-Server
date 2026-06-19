@@ -63,6 +63,16 @@ async function run() {
        res.json(result)
     })
 
+    app.get("/my-bookings", async (req, res) => {
+        const { userId } = req.query;
+
+        const result = await bookingCollection
+          .find({ userId })
+          .toArray();
+
+        res.json(result);
+    });
+
     app.post('/tutors', async (req, res) => {
         const tutorData = req.body
         console.log(tutorData)
@@ -158,6 +168,34 @@ async function run() {
         res.status(500).json({ message: "Server error" });
       }
     });
+
+    app.delete("/bookings/:id", async (req, res) => {
+          const { id } = req.params;
+
+          const booking = await bookingCollection.findOne({
+            _id: new ObjectId(id),
+          });
+
+          await tutorCollection.updateOne(
+            {
+              _id: new ObjectId(booking.tutorId),
+            },
+            {
+              $inc: {
+                totalSlot: 1,
+              },
+            }
+          );
+
+          await bookingCollection.deleteOne({
+            _id: new ObjectId(id),
+          });
+
+          res.json({
+            success: true,
+            message: "Booking cancelled successfully",
+          });
+      });
 
     app.delete("/tutors/:id", async (req, res) => {
       try {
