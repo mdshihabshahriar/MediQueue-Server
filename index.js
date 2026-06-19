@@ -1,5 +1,5 @@
-const dns = require("node:dns");
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
+// const dns = require("node:dns");
+// dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const express = require('express')
 const dotenv = require('dotenv')
@@ -29,6 +29,7 @@ async function run() {
 
     const db = client.db("mediqueue")
     const tutorCollection = db.collection("tutors")
+    const bookingCollection = db.collection("bookings")
 
     app.get('/tutors', async (req, res) => {
         const result = await tutorCollection.find().toArray();
@@ -55,6 +56,61 @@ async function run() {
         res.json(result)
     })
 
+   app.post("/bookings", async (req, res) => {
+      try {
+        const bookingData = req.body;
+
+        const tutor = await tutorCollection.findOne({
+          _id: new ObjectId(bookingData.tutorId),
+        });
+
+        if (!tutor) {
+          return res.status(404).json({
+            message: "Tutor not found",
+          });
+        }
+
+        if (Number(tutor.totalSlot) <= 0) {
+          return res.status(400).json({
+            message: "No slots available",
+          });
+        }
+        const existing = await bookingCollection.findOne({
+          userId: bookingData.userId,
+          tutorId: bookingData.tutorId,
+        });
+
+        if (existing) {
+          return res.status(400).json({
+            message: "You already booked this tutor",
+          });
+        }
+
+        const bookingResult = await bookingCollection.insertOne(bookingData);
+
+        await tutorCollection.updateOne(
+          { _id: new ObjectId(bookingData.tutorId) },
+          {
+            $inc: {
+              totalSlot: -1,
+            },
+          }
+        );
+
+        res.status(201).json({
+          success: true,
+          bookingId: bookingResult.insertedId,
+          message: "Booking successful",
+        });
+      } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+          message: "Server error",
+        });
+      }
+    });
+    
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
