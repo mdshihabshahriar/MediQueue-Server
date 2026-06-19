@@ -36,6 +36,21 @@ async function run() {
         res.json(result)
     })
 
+    app.get("/my-tutors", async (req, res) => {
+      try {
+        const { userId } = req.query;
+
+        const result = await tutorCollection
+          .find({ createdBy: userId })
+          .toArray();
+
+        res.json(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
     app.get('/featured', async (req, res) => {
         const result = await tutorCollection.find().limit(6).toArray();
         res.json(result)
@@ -108,6 +123,63 @@ async function run() {
         res.status(500).json({
           message: "Server error",
         });
+      }
+    });
+
+    app.patch("/tutors/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const updateData = req.body;
+
+        const filter = { _id: new ObjectId(id) };
+
+        const updateDoc = {
+          $set: {
+            tutorName: updateData.tutorName,
+            subjects: updateData.subjects,
+            availability: updateData.availability,
+            totalSlot: updateData.totalSlot,
+            hourlyFee: updateData.hourlyFee,
+            sessionDate: updateData.sessionDate,
+          },
+        };
+
+        const result = await tutorCollection.updateOne(filter, updateDoc);
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Tutor not found" });
+        }
+
+        const updatedTutor = await tutorCollection.findOne(filter);
+
+        res.json(updatedTutor);
+      } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    app.delete("/tutors/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        const result = await tutorCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({
+            message: "Tutor not found",
+          });
+        }
+
+        res.json({
+          success: true,
+          message: "Tutor deleted successfully",
+        });
+      } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
       }
     });
     
