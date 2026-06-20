@@ -5,6 +5,7 @@ const express = require('express')
 const dotenv = require('dotenv')
 const cors = require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 dotenv.config()
 
 const uri = process.env.MONGODB_URI;
@@ -22,6 +23,32 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+const JWKS = createRemoteJWKSet(
+  new URL("http://localhost:3000/api/auth/jwks")
+)
+
+const verifyToken = async (req, res, next) => {
+    const authHeader = req.headers.authorization
+    if(!authHeader)
+    {
+        return res.status(401).json({ message : "Unauthorized" })
+    }
+    const token = authHeader.split(" ")[1]
+    if(!token)
+    {
+      return res.status(401).json({ message : "Unauthorized" })
+    }
+ 
+    try{
+      const {payload} = await jwtVerify(token, JWKS)
+      console.log(payload)
+      next()
+    }
+    catch(error){
+        return res.status(403).json({message: "Forbidden"})
+    }
+}
 
 async function run() {
   try {
@@ -56,7 +83,7 @@ async function run() {
         res.json(result)
     })
 
-    app.get('/tutors/:id', async (req, res) => {
+    app.get('/tutors/:id', verifyToken, async (req, res) => {
        const {id} = req.params
        const result = await tutorCollection.findOne({_id: new ObjectId(id)})
 
@@ -75,13 +102,13 @@ async function run() {
 
     app.post('/tutors', async (req, res) => {
         const tutorData = req.body
-        console.log(tutorData)
+        // console.log(tutorData)
         const result = await tutorCollection.insertOne(tutorData)
 
         res.json(result)
     })
 
-   app.post("/bookings", async (req, res) => {
+   app.post("/bookings", verifyToken, async (req, res) => {
       try {
         const bookingData = req.body;
 
@@ -169,7 +196,7 @@ async function run() {
       }
     });
 
-    app.delete("/bookings/:id", async (req, res) => {
+    app.delete("/bookings/:id", verifyToken, async (req, res) => {
           const { id } = req.params;
 
           const booking = await bookingCollection.findOne({
