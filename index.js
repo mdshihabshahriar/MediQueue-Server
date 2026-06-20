@@ -59,7 +59,29 @@ async function run() {
     const bookingCollection = db.collection("bookings")
 
     app.get('/tutors', async (req, res) => {
-        const result = await tutorCollection.find().toArray();
+        const { search, startDate, endDate } = req.query;
+
+        let query = {};
+        if (search) {
+          query.tutorName = {
+            $regex: search,
+            $options: "i",
+          };
+        }
+
+        if (startDate || endDate) {
+          query.createdAt = {};
+
+          if (startDate) {
+            query.createdAt.$gte = new Date(startDate);
+          }
+
+          if (endDate) {
+            query.createdAt.$lte = new Date(endDate);
+          }
+        }
+
+        const result = await tutorCollection.find(query).toArray();
         res.json(result)
     })
 
@@ -101,7 +123,8 @@ async function run() {
     });
 
     app.post('/tutors', async (req, res) => {
-        const tutorData = req.body
+        const tutorData = {...req.body,
+        createdAt: new Date()}
         // console.log(tutorData)
         const result = await tutorCollection.insertOne(tutorData)
 
