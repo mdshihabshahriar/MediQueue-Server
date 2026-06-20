@@ -42,7 +42,6 @@ const verifyToken = async (req, res, next) => {
  
     try{
       const {payload} = await jwtVerify(token, JWKS)
-      req.user = payload
       // console.log(payload)
       next()
     }
@@ -59,7 +58,7 @@ async function run() {
     const tutorCollection = db.collection("tutors")
     const bookingCollection = db.collection("bookings")
 
-    app.get('/tutors', verifyToken, async (req, res) => {
+    app.get('/tutors', async (req, res) => {
         const result = await tutorCollection.find().toArray();
         res.json(result)
     })
