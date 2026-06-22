@@ -13,7 +13,21 @@ const uri = process.env.MONGODB_URI;
 const app = express()
 const PORT = process.env.PORT;
 
-app.use(cors())
+const allowedOrigins = [
+  'http://localhost:3000','https://mediqueue-tau-eight.vercel.app'
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  }))
 app.use(express.json())
 
 const client = new MongoClient(uri, {
