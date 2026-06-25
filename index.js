@@ -99,7 +99,7 @@ async function run() {
         res.json(result)
     })
 
-    app.get("/my-tutors", async (req, res) => {
+    app.get("/my-tutors", verifyToken, async (req, res) => {
       try {
         const { userId } = req.query;
 
@@ -126,7 +126,7 @@ async function run() {
        res.json(result)
     })
 
-    app.get("/my-bookings", async (req, res) => {
+    app.get("/my-bookings", verifyToken, async (req, res) => {
         const { userId } = req.query;
 
         const result = await bookingCollection
@@ -136,7 +136,7 @@ async function run() {
         res.json(result);
     });
 
-    app.post('/tutors', async (req, res) => {
+    app.post('/tutors', verifyToken, async (req, res) => {
         const tutorData = {...req.body,
         createdAt: new Date()}
         // console.log(tutorData)
@@ -200,7 +200,7 @@ async function run() {
       }
     });
 
-    app.patch("/tutors/:id", async (req, res) => {
+    app.patch("/tutors/:id", verifyToken, async (req, res) => {
       try {
         const { id } = req.params;
         const updateData = req.body;
@@ -261,7 +261,7 @@ async function run() {
           });
       });
 
-    app.delete("/tutors/:id", async (req, res) => {
+    app.delete("/tutors/:id", verifyToken, async (req, res) => {
       try {
         const { id } = req.params;
 
